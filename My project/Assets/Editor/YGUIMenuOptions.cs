@@ -7,11 +7,17 @@ using MenuCommand = UnityEditor.MenuCommand;
 
 public static class YGUIMenuOptions
 {
-    [MenuItem("GameObject/YGUI/TouchList", false, 2027)]
+    [MenuItem("GameObject/YGUI/TouchList", false)]
     public static void AddTouchList(MenuCommand menuCommand)
     {
         GameObject go = new GameObject("TouchList", typeof(RectTransform));
+        go.AddComponent<Image>();
         go.AddComponent<YTouchList>();
+
+        GameObject viewPortGO = new GameObject("ViewPort", typeof(RectTransform), typeof(RectMask2D));
+        viewPortGO.transform.SetParent(go.transform, false);
+        GameObject contentGO = new GameObject("Content", typeof(RectTransform));
+        contentGO.transform.SetParent(viewPortGO.transform, false);
 
         go.transform.SetParent(FindFirstCanvas(menuCommand).transform, false);
 
