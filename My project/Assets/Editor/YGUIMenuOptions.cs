@@ -15,17 +15,14 @@ public static class YGUIMenuOptions
 
         go.transform.SetParent(FindFirstCanvas(menuCommand).transform, false);
 
-        Undo.RegisterCreatedObjectUndo(go, "Create TouchList");
         Selection.activeGameObject = go;
     }
 
     private static GameObject CreateCanvas()
     {
-        GameObject canvasGO = ObjectFactory.CreateGameObject("Canvas");
-        Canvas canvas = ObjectFactory.AddComponent<Canvas>(canvasGO);
+        GameObject canvasGO = ObjectFactory.CreateGameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        Canvas canvas = canvasGO.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        ObjectFactory.AddComponent<CanvasScaler>(canvasGO);
-        ObjectFactory.AddComponent<GraphicRaycaster>(canvasGO);
 
         if (Object.FindAnyObjectByType<EventSystem>(FindObjectsInactive.Include) == null)
         {
