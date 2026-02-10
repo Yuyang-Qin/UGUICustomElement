@@ -33,13 +33,13 @@ public class UIStateMachineBase<T> where T : Enum
     {
         if(!m_states.ContainsKey(nextStateKey))
         {
-            Debug.LogError($"SateMachine change state Error :: has dont register state(\"{nextStateKey.ToString()}\"), check plz!");
+            Debug.LogError($"UISateMachine change state Error :: has dont register state(\"{nextStateKey.ToString()}\"), check plz!");
             return;
         }
 
         if(m_curState != null && m_curState.stateKey.Equals(nextStateKey))
         {
-            Debug.Log($"SateMachine :: Enter the state(\"{nextStateKey.ToString()}\") repeatedly, and the switching operation is cancelled.");
+            Debug.Log($"UISateMachine :: Enter the state(\"{nextStateKey.ToString()}\") repeatedly, and the switching operation is cancelled.");
             return;
         }
 
@@ -55,7 +55,7 @@ public class UIStateMachineBase<T> where T : Enum
 
     }
 
-    public void Update(float deltaTime)
+    public void Update()
     {
         if(m_curState != null && m_canUpdate)
         {

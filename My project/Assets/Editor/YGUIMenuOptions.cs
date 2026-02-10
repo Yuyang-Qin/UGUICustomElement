@@ -12,12 +12,14 @@ public static class YGUIMenuOptions
     {
         GameObject go = new GameObject("TouchList", typeof(RectTransform));
         go.AddComponent<Image>();
-        go.AddComponent<YTouchList>();
+        var listComponent = go.AddComponent<YTouchList>();
 
         GameObject viewPortGO = new GameObject("ViewPort", typeof(RectTransform), typeof(RectMask2D));
         viewPortGO.transform.SetParent(go.transform, false);
         GameObject contentGO = new GameObject("Content", typeof(RectTransform));
         contentGO.transform.SetParent(viewPortGO.transform, false);
+
+        listComponent.content = contentGO.GetComponent<RectTransform>();
 
         go.transform.SetParent(FindFirstCanvas(menuCommand).transform, false);
 

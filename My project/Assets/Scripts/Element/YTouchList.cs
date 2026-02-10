@@ -8,7 +8,7 @@ using static UnityEngine.UI.ScrollRect;
 [ExecuteAlways]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform))]
-public class YTouchList : UIBehaviour
+public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 {
     public enum MovingDirection
     {
@@ -17,12 +17,17 @@ public class YTouchList : UIBehaviour
         Free
     }
 
-    private enum state
+    protected enum state
     {
         Idle,
         Dragging,
         Inertia
     }
+
+    //================================================================================  Getter/Setter  ================================================================================
+    [SerializeField]
+    private RectTransform m_content;
+    public RectTransform content {  get { return m_content; } set { m_content = value; } }
 
     [SerializeField]
     private MovingDirection m_movingDirection = MovingDirection.Vertical;
@@ -33,22 +38,100 @@ public class YTouchList : UIBehaviour
 
     [SerializeField]
     private MovementType m_movementType = MovementType.Elastic;
-
     /// <summary>
     /// The behavior to use when the content moves beyond the scroll rect.
     /// </summary>
     public MovementType movementType { get { return m_movementType; } set { m_movementType = value; } }
 
-    private UIStateMachineBase<state> m_stateMachine = null;
+    //================================================================================  Variable  ================================================================================
+    protected UIStateMachineBase<state> m_stateMachine = null;
 
+    private Vector2 m_lastDragDelta = Vector2.zero;
+    private bool isDragging = false;
+    private bool isInertiaing = false;
+    private float velocity = 0;
+
+    //================================================================================  LifeCycle  ================================================================================
     protected override void Awake()
     {
         base.Awake();
 
         m_stateMachine = new UIStateMachineBase<state>();
-        m_stateMachine.RegisterState(new UIStateBase<state>(state.Idle));   //TODO
-        m_stateMachine.RegisterState(new UIStateBase<state>(state.Dragging));   //TODO
-        m_stateMachine.RegisterState(new UIStateBase<state>(state.Inertia));    //TODO
+        m_stateMachine.RegisterState(new UIStateBase<state>(state.Idle, onIdleStateEntryAction));
+        m_stateMachine.RegisterState(new UIStateBase<state>(state.Dragging, onDraggingStateEntryAction, onDraggingStateUpdateAction, onDraggingStateExitAction));
+        m_stateMachine.RegisterState(new UIStateBase<state>(state.Inertia, onInertiaStateEntryAction, onInertiaUpdateAction, onInertiaExitAction));
         m_stateMachine.ChangeStateTo(state.Idle);
+    }
+
+    private void Update()
+    {
+        if (isDragging || isInertiaing)
+        {
+            m_stateMachine.Update();
+        }
+    }
+
+    //================================================================================  Interface Implementation  ================================================================================
+    public void OnInitializePotentialDrag(PointerEventData eventData)
+    {
+        m_stateMachine.ChangeStateTo(state.Idle);
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        m_stateMachine.ChangeStateTo(state.Dragging);
+        isDragging = true;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        m_stateMachine.ChangeStateTo(state.Inertia);
+        isDragging = false;
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        m_lastDragDelta += eventData.delta;     //Prevent update and onDrag from being out of sync and causing data errors
+    }
+
+    //================================================================================  Functions  ================================================================================
+    protected void onIdleStateEntryAction()
+    {
+        isDragging = isInertiaing = false;
+    }
+
+    protected void onDraggingStateEntryAction()
+    {
+        isDragging = true;
+    }
+
+    protected void onDraggingStateUpdateAction()
+    {
+
+    }
+
+    protected void onDraggingStateExitAction()
+    {
+        isDragging = false;
+    }
+
+    protected void onInertiaStateEntryAction()
+    {
+        isInertiaing = true;
+    }
+
+    protected void onInertiaUpdateAction()
+    {
+
+    }
+
+    protected void onInertiaExitAction()
+    {
+        isInertiaing = false;
+    }
+
+    protected void controlContentMove()
+    {
+
     }
 }
