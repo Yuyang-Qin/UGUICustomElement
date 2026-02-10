@@ -1,7 +1,7 @@
-using System.ComponentModel.Design;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using MenuCommand = UnityEditor.MenuCommand;
 
@@ -36,7 +36,7 @@ public static class YGUIMenuOptions
         {
             GameObject esGO = ObjectFactory.CreateGameObject("EventSystem");
             ObjectFactory.AddComponent<EventSystem>(esGO);
-            ObjectFactory.AddComponent<StandaloneInputModule>(esGO);
+            ObjectFactory.AddComponent<InputSystemUIInputModule>(esGO);
         }
 
         return canvasGO;

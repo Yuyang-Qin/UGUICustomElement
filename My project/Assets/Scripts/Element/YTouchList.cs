@@ -27,7 +27,7 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
     //================================================================================  Getter/Setter  ================================================================================
     [SerializeField]
     private RectTransform m_content;
-    public RectTransform content {  get { return m_content; } set { m_content = value; } }
+    public RectTransform content { get { return m_content; } set { m_content = value; } }
 
     [SerializeField]
     private MovingDirection m_movingDirection = MovingDirection.Vertical;
@@ -107,7 +107,20 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
 
     protected void onDraggingStateUpdateAction()
     {
+        Vector2 move = m_lastDragDelta;
+        m_lastDragDelta = Vector2.zero;
 
+        if (m_movingDirection == MovingDirection.Horizontal)
+        {
+            move.y = 0;
+        }
+        else if (m_movingDirection == MovingDirection.Vertical)
+        {
+            move.x = 0;
+        }
+
+        controlContentMove(move);
+        velocity = move.magnitude / Time.deltaTime;
     }
 
     protected void onDraggingStateExitAction()
@@ -122,7 +135,13 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
 
     protected void onInertiaUpdateAction()
     {
+        Vector2 move = Vector2.zero;
 
+        controlContentMove(move);
+        if (velocity <= 0.1f)
+        {
+            m_stateMachine.ChangeStateTo(state.Idle);
+        }
     }
 
     protected void onInertiaExitAction()
@@ -130,8 +149,14 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
         isInertiaing = false;
     }
 
-    protected void controlContentMove()
+    protected void controlContentMove(Vector2 move)
     {
+        if (m_content == null)
+        {
+            Debug.LogError("TouchList :: controlContentMove has Error :: dont found content, check plz!");
+            return;
+        }
 
+        m_content.anchoredPosition += move;
     }
 }
