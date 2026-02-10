@@ -30,7 +30,7 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
     public RectTransform content { get { return m_content; } set { m_content = value; } }
 
     [SerializeField]
-    private MovingDirection m_movingDirection = MovingDirection.Vertical;
+    private MovingDirection m_movingDirection = MovingDirection.Free;
     /// <summary>
     /// Limit scrollable directions based on settings
     /// </summary>
@@ -43,10 +43,25 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
     /// </summary>
     public MovementType movementType { get { return m_movementType; } set { m_movementType = value; } }
 
+    [SerializeField]
+    private float m_inertiaThreshold = 0.1f;
+    /// <summary>
+    /// Sliding threshold, the larger the value, the harder it is to slide
+    /// </summary>
+    public float inertiaThreshold { get { return m_inertiaThreshold; } set { m_inertiaThreshold = value; } }
+
+    [SerializeField, Range(0.1f, 0.9f)]
+    private float m_decelerationRate = 0.8f;
+    /// <summary>
+    /// The smaller the value, the faster the deceleration
+    /// </summary>
+    public float decelerationRate { get { return m_decelerationRate; } set { m_decelerationRate = Mathf.Clamp(value, 0.1f, 0.9f); } }
+
     //================================================================================  Variable  ================================================================================
     protected UIStateMachineBase<state> m_stateMachine = null;
 
     private Vector2 m_lastDragDelta = Vector2.zero;
+    private Vector2 m_inertiaDelta = Vector2.zero;
     private bool isDragging = false;
     private bool isInertiaing = false;
     private float velocity = 0;
@@ -85,6 +100,7 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        m_inertiaDelta = eventData.delta;
         m_stateMachine.ChangeStateTo(state.Inertia);
         isDragging = false;
     }
@@ -120,6 +136,7 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
         }
 
         controlContentMove(move);
+
         velocity = move.magnitude / Time.deltaTime;
     }
 
@@ -137,9 +154,22 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
     {
         Vector2 move = Vector2.zero;
 
+        move = m_inertiaDelta.normalized * velocity * Time.deltaTime;
+        if (m_movingDirection == MovingDirection.Horizontal)
+        {
+            move.y = 0;
+        }
+        else if (m_movingDirection == MovingDirection.Vertical)
+        {
+            move.x = 0;
+        }
+
         controlContentMove(move);
+
+        velocity *= m_decelerationRate;
         if (velocity <= 0.1f)
         {
+            velocity = 0;
             m_stateMachine.ChangeStateTo(state.Idle);
         }
     }

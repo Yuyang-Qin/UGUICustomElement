@@ -553,10 +553,10 @@ RectTransform:
   - {fileID: 1935722942}
   m_Father: {fileID: 2132278144}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1453156895
 MonoBehaviour:
@@ -602,10 +602,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1453156894}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 352.20166, y: -189.52557}
-  m_SizeDelta: {x: 804.4033, y: 479.0511}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 496.96436, y: -275.85126}
+  m_SizeDelta: {x: 993.9287, y: 551.7026}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2132278143
 GameObject:
@@ -643,8 +643,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_AnchoredPosition: {x: 0, y: 71}
+  m_SizeDelta: {x: 466.4161, y: 261.0967}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2132278145
 MonoBehaviour:
@@ -659,8 +659,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YTouchList
   m_content: {fileID: 1935722942}
-  m_movingDirection: 1
+  m_movingDirection: 2
   m_movementType: 1
+  m_inertiaThreshold: 0.1
+  m_decelerationRate: 0.8
 --- !u!114 &2132278146
 MonoBehaviour:
   m_ObjectHideFlags: 0
