@@ -61,6 +61,7 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
     protected UIStateMachineBase<state> m_stateMachine = null;
 
     private Vector2 m_lastDragDelta = Vector2.zero;
+    private Vector2 m_smoothedDragDelta = Vector2.zero;
     private Vector2 m_inertiaDelta = Vector2.zero;
     private bool isDragging = false;
     private bool isInertiaing = false;
@@ -100,7 +101,8 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        m_inertiaDelta = eventData.delta;
+        m_inertiaDelta = m_smoothedDragDelta;
+        m_smoothedDragDelta = Vector2.zero;
         m_stateMachine.ChangeStateTo(state.Inertia);
         isDragging = false;
     }
@@ -108,6 +110,7 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
     public void OnDrag(PointerEventData eventData)
     {
         m_lastDragDelta += eventData.delta;     //Prevent update and onDrag from being out of sync and causing data errors
+        m_smoothedDragDelta = Vector2.Lerp(m_smoothedDragDelta, eventData.delta, 0.5f);
     }
 
     //================================================================================  Functions  ================================================================================
@@ -119,6 +122,7 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
     protected void onDraggingStateEntryAction()
     {
         isDragging = true;
+        velocity = 0f;
     }
 
     protected void onDraggingStateUpdateAction()
@@ -137,7 +141,7 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
 
         controlContentMove(move);
 
-        velocity = move.magnitude / Time.deltaTime;
+        velocity = Mathf.Max(move.magnitude / Time.deltaTime, velocity);
     }
 
     protected void onDraggingStateExitAction()
@@ -147,6 +151,12 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
 
     protected void onInertiaStateEntryAction()
     {
+        if(velocity < m_inertiaThreshold)
+        {
+            m_stateMachine.ChangeStateTo(state.Idle);
+            return;
+        }
+
         isInertiaing = true;
     }
 
