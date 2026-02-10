@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using static UnityEngine.UI.ScrollRect;
 
 [AddComponentMenu("YGUI/Touch List", 1)]
@@ -23,6 +23,9 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
         Dragging,
         Inertia
     }
+
+    //================================================================================  Constant  ================================================================================
+    private readonly static int VELOCITY_SMOOTHING_FRAMES = 3;
 
     //================================================================================  Getter/Setter  ================================================================================
     [SerializeField]
@@ -58,77 +61,78 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
     public float decelerationRate { get { return m_decelerationRate; } set { m_decelerationRate = Mathf.Clamp(value, 0.1f, 0.9f); } }
 
     //================================================================================  Variable  ================================================================================
-    protected UIStateMachineBase<state> m_stateMachine = null;
+    protected UIStateMachineBase<state> _stateMachine = null;
 
-    private Vector2 m_lastDragDelta = Vector2.zero;
-    private Vector2 m_smoothedDragDelta = Vector2.zero;
-    private Vector2 m_inertiaDelta = Vector2.zero;
-    private bool isDragging = false;
-    private bool isInertiaing = false;
-    private float velocity = 0;
+    private Vector2 _lastDragDelta = Vector2.zero;
+    private Vector2 _smoothedDragDelta = Vector2.zero;
+    private Vector2 _inertiaDelta = Vector2.zero;
+    private bool _isDragging = false;
+    private bool _isInertiaing = false;
+    private Queue<float> _velocityQueue = new Queue<float>(VELOCITY_SMOOTHING_FRAMES);
+    private float _velocity = 0;
 
     //================================================================================  LifeCycle  ================================================================================
     protected override void Awake()
     {
         base.Awake();
 
-        m_stateMachine = new UIStateMachineBase<state>();
-        m_stateMachine.RegisterState(new UIStateBase<state>(state.Idle, onIdleStateEntryAction));
-        m_stateMachine.RegisterState(new UIStateBase<state>(state.Dragging, onDraggingStateEntryAction, onDraggingStateUpdateAction, onDraggingStateExitAction));
-        m_stateMachine.RegisterState(new UIStateBase<state>(state.Inertia, onInertiaStateEntryAction, onInertiaUpdateAction, onInertiaExitAction));
-        m_stateMachine.ChangeStateTo(state.Idle);
+        _stateMachine = new UIStateMachineBase<state>();
+        _stateMachine.RegisterState(new UIStateBase<state>(state.Idle, onIdleStateEntryAction));
+        _stateMachine.RegisterState(new UIStateBase<state>(state.Dragging, onDraggingStateEntryAction, onDraggingStateUpdateAction, onDraggingStateExitAction));
+        _stateMachine.RegisterState(new UIStateBase<state>(state.Inertia, onInertiaStateEntryAction, onInertiaUpdateAction, onInertiaExitAction));
+        _stateMachine.ChangeStateTo(state.Idle);
     }
 
     private void Update()
     {
-        if (isDragging || isInertiaing)
+        if (_isDragging || _isInertiaing)
         {
-            m_stateMachine.Update();
+            _stateMachine.Update();
         }
     }
 
     //================================================================================  Interface Implementation  ================================================================================
     public void OnInitializePotentialDrag(PointerEventData eventData)
     {
-        m_stateMachine.ChangeStateTo(state.Idle);
+        _stateMachine.ChangeStateTo(state.Idle);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        m_stateMachine.ChangeStateTo(state.Dragging);
-        isDragging = true;
+        _stateMachine.ChangeStateTo(state.Dragging);
+        _isDragging = true;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        m_inertiaDelta = m_smoothedDragDelta;
-        m_smoothedDragDelta = Vector2.zero;
-        m_stateMachine.ChangeStateTo(state.Inertia);
-        isDragging = false;
+        _inertiaDelta = _smoothedDragDelta;
+        _smoothedDragDelta = Vector2.zero;
+        _stateMachine.ChangeStateTo(state.Inertia);
+        _isDragging = false;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        m_lastDragDelta += eventData.delta;     //Prevent update and onDrag from being out of sync and causing data errors
-        m_smoothedDragDelta = Vector2.Lerp(m_smoothedDragDelta, eventData.delta, 0.5f);
+        _lastDragDelta += eventData.delta;     //Prevent update and onDrag from being out of sync and causing data errors
+        _smoothedDragDelta = Vector2.Lerp(_smoothedDragDelta, eventData.delta, 0.5f);
     }
 
     //================================================================================  Functions  ================================================================================
     protected void onIdleStateEntryAction()
     {
-        isDragging = isInertiaing = false;
+        _isDragging = _isInertiaing = false;
     }
 
     protected void onDraggingStateEntryAction()
     {
-        isDragging = true;
-        velocity = 0f;
+        _isDragging = true;
+        _velocity = 0f;
     }
 
     protected void onDraggingStateUpdateAction()
     {
-        Vector2 move = m_lastDragDelta;
-        m_lastDragDelta = Vector2.zero;
+        Vector2 move = _lastDragDelta;
+        _lastDragDelta = Vector2.zero;
 
         if (m_movingDirection == MovingDirection.Horizontal)
         {
@@ -141,52 +145,61 @@ public class YTouchList : UIBehaviour, IInitializePotentialDragHandler, IBeginDr
 
         controlContentMove(move);
 
-        velocity = Mathf.Max(move.magnitude / Time.deltaTime, velocity);
+        if (_velocityQueue.Count >= VELOCITY_SMOOTHING_FRAMES)
+            _velocityQueue.Dequeue();
+        _velocityQueue.Enqueue(move.magnitude / Time.deltaTime);
     }
 
     protected void onDraggingStateExitAction()
     {
-        isDragging = false;
+        _isDragging = false;
     }
 
     protected void onInertiaStateEntryAction()
     {
-        if(velocity < m_inertiaThreshold)
+        var count = _velocityQueue.Count;
+        while(_velocityQueue.Count > 0)
         {
-            m_stateMachine.ChangeStateTo(state.Idle);
+            _velocity += _velocityQueue.Dequeue();
+        }
+        _velocity /= count;
+        _velocityQueue.Clear();
+
+        if(_velocity < m_inertiaThreshold)
+        {
+            _stateMachine.ChangeStateTo(state.Idle);
             return;
         }
 
-        isInertiaing = true;
+        if (m_movingDirection == MovingDirection.Horizontal)
+        {
+            _inertiaDelta.y = 0;
+        }
+        else if (m_movingDirection == MovingDirection.Vertical)
+        {
+            _inertiaDelta.x = 0;
+        }
+
+        _isInertiaing = true;
     }
 
     protected void onInertiaUpdateAction()
     {
-        Vector2 move = Vector2.zero;
-
-        move = m_inertiaDelta.normalized * velocity * Time.deltaTime;
-        if (m_movingDirection == MovingDirection.Horizontal)
-        {
-            move.y = 0;
-        }
-        else if (m_movingDirection == MovingDirection.Vertical)
-        {
-            move.x = 0;
-        }
+        Vector2 move = _inertiaDelta.normalized * _velocity * Time.deltaTime;
 
         controlContentMove(move);
 
-        velocity *= m_decelerationRate;
-        if (velocity <= 0.1f)
+        _velocity *= m_decelerationRate;
+        if (_velocity <= m_inertiaThreshold)
         {
-            velocity = 0;
-            m_stateMachine.ChangeStateTo(state.Idle);
+            _velocity = 0;
+            _stateMachine.ChangeStateTo(state.Idle);
         }
     }
 
     protected void onInertiaExitAction()
     {
-        isInertiaing = false;
+        _isInertiaing = false;
     }
 
     protected void controlContentMove(Vector2 move)
